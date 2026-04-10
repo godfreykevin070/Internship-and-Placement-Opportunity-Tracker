@@ -1,68 +1,47 @@
-from fastapi import FastAPI, Depends
-from sqlalchemy import create_engine, Column, Integer, String, DECIMAL
-from sqlalchemy.orm import declarative_base, sessionmaker, Session
-from pydantic import BaseModel
+from fastapi import FastAPI
 from contextlib import asynccontextmanager
-import os
-from dotenv import load_dotenv
-
-load_dotenv()
-
-USERNAME = os.getenv("USER_NAME")
-PASSWORD = os.getenv("PASSWORD")
-HOST_NAME = os.getenv("HOST_NAME")
-PORT = os.getenv("PORT")
-
-DATABASE_URL = f"mysql+pymysql://{USERNAME}:{PASSWORD}@{HOST_NAME}:{PORT}/InternshipTracker"
-
-engine = create_engine(DATABASE_URL, echo=True)
-SessionLocal = sessionmaker(bind=engine, autocommit=False, autoflush=False)
-Base = declarative_base()
+from routes import (
+    student_router, company_router, opportunity_router, 
+    application_router, skill_router, interview_router,
+    eligibility_router, student_skill_router, opportunity_skill_router,
+    dashboard_router
+)
+from database import engine, Base
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    # Startup: Create database tables
+    Base.metadata.create_all(bind=engine)
     yield
+    # Shutdown: Clean up if needed
 
-app = FastAPI(lifespan=lifespan)
+app = FastAPI(
+    title="Internship and Placement Opportunity Tracker API",
+    description="API for managing internships, students, applications, and placements",
+    version="1.0.0",
+    lifespan=lifespan
+)
 
-# ✅ Match DB table exactly
-class Student(Base):
-    __tablename__ = "Student"
+# Include all routers
+app.include_router(student_router, prefix="/api/v1", tags=["Students"])
+app.include_router(company_router, prefix="/api/v1", tags=["Companies"])
+app.include_router(opportunity_router, prefix="/api/v1", tags=["Opportunities"])
+app.include_router(application_router, prefix="/api/v1", tags=["Applications"])
+app.include_router(skill_router, prefix="/api/v1", tags=["Skills"])
+app.include_router(interview_router, prefix="/api/v1", tags=["Interviews"])
+app.include_router(eligibility_router, prefix="/api/v1", tags=["Eligibility Criteria"])
+app.include_router(student_skill_router, prefix="/api/v1", tags=["Student Skills"])
+app.include_router(opportunity_skill_router, prefix="/api/v1", tags=["Opportunity Skills"])
+app.include_router(dashboard_router, prefix="/api/v1", tags=["Dashboard"])
 
-    student_id = Column(Integer, primary_key=True, index=True)
-    enrollment_number = Column(String(20), unique=True, nullable=False)
-    first_name = Column(String(50))
-    last_name = Column(String(50))
-    email = Column(String(100), unique=True)
-    department = Column(String(50))
-    current_cgpa = Column(DECIMAL(3,2))
+@app.get("/")
+def root():
+    return {
+        "message": "Internship and Placement Opportunity Tracker API",
+        "version": "1.0.0",
+        "docs": "/docs"
+    }
 
-# ✅ Request model
-class StudentCreate(BaseModel):
-    enrollment_number: str
-    first_name: str
-    last_name: str
-    email: str
-    department: str
-    current_cgpa: float
-
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
-
-# ✅ GET all students
-@app.get("/Student/")
-def get_students(db: Session = Depends(get_db)):
-    return db.query(Student).all()
-
-# ✅ CREATE student
-@app.post("/Student/")
-def create_student(student: StudentCreate, db: Session = Depends(get_db)):
-    new_student = Student(**student.dict())
-    db.add(new_student)
-    db.commit()
-    db.refresh(new_student)
-    return new_student
+@app.get("/health")
+def health_check():
+    return {"status": "healthy"}
