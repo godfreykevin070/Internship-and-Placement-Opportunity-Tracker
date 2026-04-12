@@ -1,47 +1,61 @@
 from fastapi import FastAPI
-from contextlib import asynccontextmanager
-from routes import (
-    student_router, company_router, opportunity_router, 
-    application_router, skill_router, interview_router,
-    eligibility_router, student_skill_router, opportunity_skill_router,
-    dashboard_router
-)
+from fastapi.middleware.cors import CORSMiddleware
+import logging
+
+from routes import router
 from database import engine, Base
+import models
 
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    # Startup: Create database tables
-    Base.metadata.create_all(bind=engine)
-    yield
-    # Shutdown: Clean up if needed
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
+# Create database tables
+logger.info("Creating database tables...")
+Base.metadata.create_all(bind=engine)
+logger.info("Database tables created successfully")
+
+# Initialize FastAPI app
 app = FastAPI(
-    title="Internship and Placement Opportunity Tracker API",
-    description="API for managing internships, students, applications, and placements",
+    title="Internship Tracker API",
+    description="Backend API for Internship and Placement Opportunity Tracker",
     version="1.0.0",
-    lifespan=lifespan
+    docs_url="/docs",
+    redoc_url="/redoc"
 )
 
-# Include all routers
-app.include_router(student_router, prefix="/api/v1", tags=["Students"])
-app.include_router(company_router, prefix="/api/v1", tags=["Companies"])
-app.include_router(opportunity_router, prefix="/api/v1", tags=["Opportunities"])
-app.include_router(application_router, prefix="/api/v1", tags=["Applications"])
-app.include_router(skill_router, prefix="/api/v1", tags=["Skills"])
-app.include_router(interview_router, prefix="/api/v1", tags=["Interviews"])
-app.include_router(eligibility_router, prefix="/api/v1", tags=["Eligibility Criteria"])
-app.include_router(student_skill_router, prefix="/api/v1", tags=["Student Skills"])
-app.include_router(opportunity_skill_router, prefix="/api/v1", tags=["Opportunity Skills"])
-app.include_router(dashboard_router, prefix="/api/v1", tags=["Dashboard"])
+# Configure CORS
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # In production, replace with specific origins
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
+# Include routers
+app.include_router(router, prefix="/api/v1", tags=["Internship Tracker"])
+
+# Root endpoint
 @app.get("/")
 def root():
     return {
-        "message": "Internship and Placement Opportunity Tracker API",
+        "message": "Welcome to Internship Tracker API",
         "version": "1.0.0",
-        "docs": "/docs"
+        "docs": "/docs",
+        "redoc": "/redoc"
     }
 
+# Health check endpoint
 @app.get("/health")
 def health_check():
     return {"status": "healthy"}
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(
+        "main:app",
+        host="0.0.0.0",
+        port=8000,
+        reload=True
+    )
