@@ -3,10 +3,31 @@ from sqlalchemy.orm import Session
 from database import get_db
 from models import User, Role
 from auth.hashing import hash_password, verify_password
+from auth.dependencies import get_current_user
 from auth.auth import create_access_token
 from auth.schemas import UserLogin, UserRegister
+from sqlalchemy.orm import Session
 
-router = APIRouter(prefix="/auth", tags=["Authentication"])
+router = APIRouter(prefix="/api/v1/auth", tags=["Authentication"])
+
+# ================= CURRENT USER API =================
+
+@router.get("/me")
+def get_me(
+    current_user=Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    # payload only has user_id + role
+    user = db.query(User).filter(User.user_id == current_user["user_id"]).first()
+
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    return {
+        "user_id": user.user_id,
+        "email": user.email,
+        "role": user.role.role_name
+    }
 
 # ================= REGISTER API =================
 
