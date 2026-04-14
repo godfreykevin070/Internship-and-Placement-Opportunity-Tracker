@@ -6,6 +6,8 @@ from routes import router
 from database import engine, Base
 import models
 
+from auth.auth_routes import router as auth_router
+
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -35,6 +37,7 @@ app.add_middleware(
 
 # Include routers
 app.include_router(router, prefix="/api/v1", tags=["Internship Tracker"])
+app.include_router(auth_router)
 
 # Root endpoint
 @app.get("/")

@@ -305,3 +305,23 @@ class OpportunitySkill(Base):
     opportunity = relationship("InternshipOpportunity", back_populates="required_skills")
     skill = relationship("Skill", back_populates="opportunity_skills")
     importance_level = relationship("ImportanceLevel", back_populates="opportunity_skills")
+
+# ================= AUTH MODELS =================
+
+class Role(Base):
+    __tablename__ = "Role"
+
+    role_id = Column(Integer, primary_key=True, index=True)
+    role_name = Column(String(50), unique=True, nullable=False)
+
+
+class User(Base):
+    __tablename__ = "User"
+
+    user_id = Column(Integer, primary_key=True, index=True)
+    email = Column(String(100), unique=True, nullable=False)
+    password_hash = Column(String(255), nullable=False)
+    role_id = Column(Integer, ForeignKey("Role.role_id"))
+    is_active = Column(Boolean, default=True)
+
+    role = relationship("Role")
