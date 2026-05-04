@@ -3,8 +3,6 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import type { ReactNode } from 'react';
 import axios from 'axios';
 
-const API_BASE_URL = import.meta.env.REACT_APP_API_URL;
-
 interface User {
   user_id: number;
   email: string;
@@ -36,7 +34,7 @@ interface AuthProviderProps {
 }
 
 // Configure axios defaults
-axios.defaults.baseURL = API_BASE_URL;
+axios.defaults.baseURL = import.meta.env.VITE_APP_API_URL;
 
 // Add token to requests if it exists
 axios.interceptors.request.use(
